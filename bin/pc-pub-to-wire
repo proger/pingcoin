@@ -1,0 +1,5 @@
+set -e
+pub=$1; shift
+secp112r1_pub_compressed_len=16
+test -f "$pub"
+openssl ec -in "$pub" -pubin -pubout -conv_form compressed -outform der | tail -c $secp112r1_pub_compressed_len | xxd -p

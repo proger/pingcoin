@@ -1,0 +1,7 @@
+rs=$1; shift
+
+r=${rs:0:28}
+s=${rs:29}
+
+printf "%s\n%s\n%s\n" "asn1=SEQUENCE:seq" "[seq]" "r=INTEGER:0x$r" "s=INTEGER:0x$s" \
+    | openssl asn1parse -genconf /dev/stdin -out /dev/stdout -noout

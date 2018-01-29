@@ -1,0 +1,15 @@
+ntx_offset=$((64+166+16+16+64))
+txsize_hex=182
+
+curtx=1
+
+cut -c $(($ntx_offset))- | {
+    read -n 4 ntx;
+    while read -n $txsize_hex tx; do
+        echo $tx
+        curtx=$(($curtx+1))
+        if [ $curtx -ge $(printf "%d" 0x$ntx) ]; then
+            exit 0
+        fi
+    done
+}

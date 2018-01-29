@@ -1,0 +1,21 @@
+set -e
+
+input=$1; shift
+index=$1; shift
+one_amount=$1; shift
+one_pub=$1; shift
+two_amount=$1; shift
+two_pub=$1; shift
+
+secp112r1_sig_len=56
+
+test $(printf "%s" $input | wc -c) -eq $secp112r1_sig_len
+test $index -ge 0
+test $one_amount -ge 0
+test -f $one_pub
+test $two_amount -ge 0
+test -f $two_pub
+
+txfmt='%s%02x%02x%s%02x%s\n'
+
+printf $txfmt $input $index $one_amount "$(pc-pub-to-wire $one_pub)" $two_amount "$(pc-pub-to-wire $two_pub)"

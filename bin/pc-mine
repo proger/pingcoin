@@ -1,0 +1,36 @@
+set -e -o pipefail
+
+# digit :: 166 ->  16
+# digit :: pos -> hex
+
+# digit(0) -> 0123456789abcdef
+# digit(1) -> 0123456789abcdef
+# digit(2) -> 0123456789abcdef
+
+difficulty=${1:-"= 0000"}; shift
+
+wireblockfile=$(mktemp)
+
+pc-unhexlify > $wireblockfile
+test -s $wireblockfile
+
+mine() {
+    local n=$1; shift
+    if [ $n -gt 0 ]; then
+        for digit in 0 1 2 3 4 5 6 7 8 9 a b c d e f; do
+            mine $((n - 1)) "$@" $digit
+        done
+    else
+        local nonce=$(printf '%s' $*)
+
+        if (pc-unhexlify "$nonce"; cat $wireblockfile) | openssl sha256 | fgrep -q "$difficulty"; then
+            date >&2
+            hash=$((pc-unhexlify "$nonce"; cat $wireblockfile) | openssl sha256 | awk '{print $2}')
+            echo "$hash$nonce$(pc-hexlify < $wireblockfile)"
+            exit 0
+        fi
+    fi
+}
+
+date >&2
+mine 166

@@ -1,0 +1,47 @@
+set -e -o pipefail
+
+blockfile=$1; shift
+height=0x$(basename $blockfile .block)
+
+difficulty=4
+zeros="$(printf "0%.0s" $(seq $difficulty))"
+
+blockhash=$(pc-takehash $blockfile)
+computedhash=$(cut -c 65- $blockfile | tr -d '\n' | pc-unhexlify | openssl sha256 | cut -d' ' -f2)
+
+failed=0
+
+if [ ${blockhash:0:$difficulty} != $zeros ]; then
+    echo poor difficulty >&2
+    failed=1
+fi
+
+if [ $blockhash != $computedhash ]; then
+    echo hash mismatch >&2
+    failed=1
+fi
+
+# actually it's ok:
+# a txinput can be spent at most twice: once by each output designator
+
+# pattern:
+# block tx
+# 0      A alice   coinbase 50 alice   0 alice
+# 1      B charlie coinbase 50 charlie 1 charlie   (+1 from tx C)
+# 1      C alice   A        40 bob     9 alice
+# 2      D charlie coinbase 50 charlie 1 charlie   (+1 from tx F)
+# 2      E bob     C        10 alice   30 charlie
+# 2      F charlie E        10 alice   19 dan
+
+
+if < $blockfile pc-txs-from-block | pc-txinput | sort | uniq -c | awk -v code=0 '$1 > 1 { code += 1; print } END { exit code }'; then
+    echo txinputs spent more than once in the same block found >&2
+    failed=1
+fi
+
+if < $blockfile pc-txs-from-block | pc-txverify $height | fgrep false; then
+    echo attempt to spend txinput from previous block >&2
+    failed=1
+fi
+
+test $failed -eq 0

@@ -1,0 +1,35 @@
+set -e -o pipefail
+
+txbuf=$(mktemp)
+
+# buffer and count transactions
+ntx=1
+while read tx; do
+    if [ $ntx -eq 1 ]; then
+        test $(echo "$tx" | pc-txinput) = $(pc-coinbase)
+    fi
+
+    printf "%s" $tx >> $txbuf
+    let ntx=ntx+1
+done
+test $ntx -lt $((256**2))
+
+prevblockid=$1; shift
+test $(printf "%s" $prevblockid | wc -c) -eq 64
+height=$1; shift
+test $height -ge 0
+
+# 32 bytes for blockid
+#echo -n 0000000000000000000000000000000000000000000000000000000000000000
+# 83 bytes for nonce (166 hex digits)
+#echo -n 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+# 8 bytes for timestamp
+printf "%016x" $(date +%s)
+# 8 bytes for height
+printf "%016x" $height
+# 32 bytes for prevblockid
+printf "%s" $prevblockid
+# 2 bytes for transaction count (ntx)
+printf "%04x" $ntx
+# N*ntx bytes for transactions
+cat $txbuf; rm -f $txbuf

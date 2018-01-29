@@ -1,0 +1,1 @@
+python -c 'import binascii, sys; sys.stdout.write(binascii.unhexlify(sys.argv[1] if sys.argv[1:] else sys.stdin.read()))' "$@"

@@ -1,0 +1,24 @@
+zero=0000000000000000000000000000000000000000000000000000000000000000
+
+# block tx
+
+# 0      A alice   coinbase 50 alice   0 alice
+tx_a=$(pc-p2pk $(pc-coinbase) 0 50 pub/alice 0 pub/alice | pc-sign priv/alice)
+
+echo $tx_a | pc-genblock $zero 0 | pc-mine = > $(printf "%016x" 0).block
+
+# 1      B charlie coinbase 50 charlie 1 charlie   (+1 from tx C)
+# 1      C alice   A        40 bob     9 alice
+tx_b=$(pc-p2pk $(pc-coinbase) 0 50 pub/charlie 1 pub/charlie | pc-sign priv/charlie)
+tx_c=$(pc-p2pk $(echo $tx_a | pc-txid) 40 pub/bob 9 pub/alice | pc-sign priv/alice)
+
+(echo $tx_b; echo $tx_c) | pc-genblock $(cat $(printf "%016x" 0).block | pc-takehash) 1 | pc-mine = > $(printf "%016x" 1).block
+
+# 2      D charlie coinbase 50 charlie 1 charlie   (+1 from tx F)
+# 2      E bob     C        10 alice   30 charlie
+# 2      F charlie E        10 alice   19 dan
+tx_d=$(pc-p2pk $(pc-coinbase) 0 50 pub/charlie 1 pub/charlie | pc-sign priv/charlie)
+tx_e=$(pc-p2pk $(echo $tx_c | pc-txid) 0 10 pub/alice 30 pub/charlie | pc-sign priv/bob)
+tx_f=$(pc-p2pk $(echo $tx_e | pc-txid) 1 10 pub/alice 19 pub/dan | pc-sign priv/charlie)
+
+(echo $tx_d; echo $tx_e; echo $tx_f) | pc-genblock $(cat $(printf "%016x" 1).block | pc-takehash) 2 | pc-mine = > $(printf "%016x" 2).block

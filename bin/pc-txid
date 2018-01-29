@@ -1,0 +1,6 @@
+
+secp112r1_sig_len=56
+
+while read line; do
+      echo ${line:0:$secp112r1_sig_len}
+done

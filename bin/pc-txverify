@@ -1,0 +1,39 @@
+set -e
+
+secp112r1_sig_len=56
+secp112r1_pk_len=32
+
+height=$1; shift
+height=$(printf "%d" $height)
+test $height -ge 0
+
+verify() {
+    tx=$1; shift
+    txsig=$(pc-txid <<< $tx)
+    txinput=$(pc-txinput <<< $tx)
+
+    amt1=0x${tx:$(($secp112r1_sig_len+$secp112r1_sig_len)):2}
+    amt2=0x${tx:$(($secp112r1_sig_len+$secp112r1_sig_len+2+$secp112r1_pk_len)):2}
+
+    sum=$(($amt1 + $amt2))
+
+    if [ $height -eq 0 ]; then
+        echo $txsig true
+        return
+    fi
+
+    for blocknum in $(seq $(($height - 1)) | xargs printf "%016x\n"); do
+        block=$blocknum.block
+        pc-txs-from-block < $block | pc-txinput | while read txi; do
+            if [ $txi = $txinput ]; then
+                echo $txsig false
+                return
+            fi
+        done
+        echo $txsig true
+    done
+}
+
+while read line; do
+      verify "$line"
+done

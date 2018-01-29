@@ -1,0 +1,11 @@
+set -e
+
+pub=$1; shift
+test -f $pub
+
+while read sig message; do
+    der=$(mktemp)
+    pc-sig-wire-to-der "$sig" > "$der"
+    openssl sha256 -verify "$pub" -signature "$der" <<< "$message"
+    rm -f "$der"
+done

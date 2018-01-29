@@ -1,0 +1,2 @@
+curve=secp112r1
+openssl ecparam -name $curve -genkey | openssl ec -conv_form compressed -outform pem -no_public

@@ -1,0 +1,9 @@
+set -e -o pipefail
+priv=$1; shift
+
+test -f "$priv"
+
+while read message; do
+    sig=$(printf "%s" "$message" | openssl sha256 -sign "$priv" | openssl asn1parse -inform der | awk -v ORS= -F: '{print $4}')
+    printf "%s%s\n" "$sig" "$message"
+done
